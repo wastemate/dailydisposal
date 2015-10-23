@@ -432,6 +432,7 @@ function viewModel() {
   self.loadCategory = function (data, event) {
     console.log('Clicked');
     console.log(data);
+    self.show('processing');
     wastemate.getServices(data.line).then(function (services) {
       if (services.length == 0) {
         self.noServiceSelection(true);
@@ -556,8 +557,8 @@ function viewModel() {
       self.selectProductService(s);
       console.log(s);
     }
-    // hack to refresh view
-    self.show('materials');
+    //Move to the next step
+    self.next();
   };
   self.isResidential = function (service) {
     var isResidential = false;
@@ -588,8 +589,10 @@ function viewModel() {
     }
     if (data.selected) {
       self.selectProductShow(data);
+      self.next();
       return;
     }
+    
     //map the services
     var serviceObjects = [
       self.landfillServices,
@@ -614,7 +617,9 @@ function viewModel() {
     self.selectedService(data);
     self.selectProductShow(data);
     console.log('choose item: ', data);
+    self.next();
   };
+  
   self.onClickCartChangeSize = function (data, event) {
     console.log('event', event);
     console.log('data', data);
@@ -705,7 +710,7 @@ function viewModel() {
       }
       break;
     case 'rolloff': {
-        console.log(self.selectedService());
+        //console.log(self.selectedService());
         _.each(self.services(), function (s) {
           if (s.selected) {
             self.cartsChoosen(true);
@@ -805,6 +810,7 @@ function viewModel() {
         };
         // initPickup = _.debounce( initPickup, 200 );
         initPickup();
+        self.show('processing');
         self.saveOrder(event, function (err) {
           if (err) {
             console.log('Could not save order.');
@@ -1114,7 +1120,12 @@ function viewModel() {
         self.shouldShowWMA(true);
         siteContent.hide();
       }
-      self.shouldShowCategories(true);
+      //Special case, one category just select it already!
+      if(self.categories().length === 1){
+        self.loadCategory(self.categories()[0]);
+      } else {
+        self.shouldShowCategories(true);
+      }
       break;
     case 'residential':
       hideAll();
@@ -1152,13 +1163,11 @@ function viewModel() {
       hideAll();
       self.shouldShowRollOffMaterials(true);
       self.shouldShowProcessNav(true);
-      self.shouldShowProcessNavFooter(true);
       break;
     case 'rolloff':
       hideAll();
       self.shouldShowRollOffServices(true);
       self.shouldShowProcessNav(true);
-      self.shouldShowProcessNavFooter(true);
       break;
     case 'siteInfo':
       hideAll();
