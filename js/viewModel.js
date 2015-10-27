@@ -825,7 +825,23 @@ function viewModel() {
         alert('You must agree with the terms to continue.');
         return;
       }
-      wastemate.setOnDemandDates(moment(self.serviceStartDate()).toDate(), moment(self.serviceEndDate()).toDate()).then(function () {
+      
+      var deliveryDate;
+      try {
+       deliveryDate = moment(self.serviceStartDate()).toDate().toISOString();
+      } catch(e){
+        alert('Please select a delivery date.');
+        return;
+      }
+      var removalDate;
+      try{
+       removalDate = moment(self.serviceEndDate()).toDate().toISOString();
+      } catch(e){
+        alert('Please select a removal date.');
+        return;
+      }
+      
+      wastemate.setOnDemandDates(deliveryDate, removalDate).then(function () {
         self.startChoosen(true);
         self.show('siteInfo');
         setupMiniMap(self.userLatLon().lat, self.userLatLon().lon);

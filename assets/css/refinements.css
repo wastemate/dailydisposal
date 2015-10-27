@@ -306,7 +306,7 @@ h4 > em {
 }
 
 .wma-product__container {
-  height: 570px;
+  min-height: 250px;
   width: 260px;
   background-color: #fff;
   margin-left: 10px;
