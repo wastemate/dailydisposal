@@ -402,6 +402,21 @@ function viewModel() {
     if (!self.wantsAutopay() && !self.isOneTimePrice()) {
       price = price * 2;
     }
+    
+    if(self.isOneTimePrice() && self.selectedService()){
+      //add rent costs
+      var rent = self.selectedService().rent;
+      var days = self.selectedService().rentDays;
+      var ms = moment(self.serviceEndDate()).diff(moment(self.serviceStartDate()));
+      var d = moment.duration(ms);
+      var daysRent = ~~(d.asDays() - 2); //excluding delivery & removal    
+      
+      if(daysRent > days){
+        var rentCost = (~~((daysRent - days) * rent * 100))/100 
+        price += rentCost;
+      }
+    }
+    
     return '$' + price;
   });
   
@@ -966,7 +981,18 @@ function viewModel() {
       self.show('processing');
       
       var processOrder = function(){
+        //persist the billing info
+        wastemate.saveBillingSelection({
+          name: self.billingFirstName() + " " + self.billingLastName(),
+          street: self.billingAddress(),
+          city: self.billingCity,
+          state: self.billingStateShort,
+          zip: self.billingZip(),
+          phone: self.billingPhone()
+        });
+        //persist billing options
         wastemate.setBillingOptions(self.wantsAutopay(), self.wantsPaperless());
+        //persist the order!
         wastemate.processNewOrder().then(function (account) {
             self.saveOrderInFlight = false;
             console.log(account);

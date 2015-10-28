@@ -324,7 +324,7 @@
         <script type="text/html" id="wma-products-resi-container">
             <div class="wma-products__product-wrap">
                 <div class="wma-choose__selector">
-                    <p class="wma-products__title">Drop-off</p>
+                    <p class="wma-products__title">Service Start Date</p>
                     <p class="wma-products__title-note  wma-base__f-light">Your service day is <span class="wma-base__f-xtrabold" data-bind="text: humanDeliveryDay()"></span></p>
                     <div id='first-pickup-date-text'></div>
                     <div id='first-pickup-datepicker'></div>
@@ -357,7 +357,7 @@
 
                 <div class="wma-choose__selector">
                   <!-- ui datepicker -->
-                  <label for="wma-start-date">Drop-off</label>
+                  <label for="wma-start-date">Delivery Date</label>
                   <div id='wma-rolloff-dropoff-date-text'></div>
                   <div id='wma-rolloff-dropoff-datepicker'></div>
                   <!-- <input class="wma-choose__selector-date" type="datetime-local" id="wma-start-date" placeholder="Select Date"> -->
@@ -366,7 +366,7 @@
 
                 <div class="wma-choose__selector">
                   <!-- ui datepicker -->
-                  <label for="wma-end-date">Pick-up</label>
+                  <label for="wma-end-date">Removal Date</label>
                   <div id='wma-rolloff-pickup-date-text'></div>
                   <div id='wma-rolloff-pickup-datepicker'></div>
                   <!-- <input class="wma-choose__selector-date" type="datetime-local" id="wma-end-date" placeholder="Select Date"> -->
@@ -381,7 +381,7 @@
                       </div>
                       <div class="wma-product__desc-wrap">
                         <div class="wma-base__light-border  wma-product__desc">
-                          <p class="wma-product__price wma-product__oc-price" data-bind="text: (price > 0 ? ('$' + price) : 'Call')"></p>
+                          <p class="wma-product__price wma-product__oc-price" data-bind="text: $root.orderTotal"></p>
                           <p class="wma-product__size" data-bind="text: name"></p>
                           <p class="wma-product__description" data-bind="text: description"></p>
                         </div>
@@ -501,7 +501,7 @@
                   <div class="wma-info__column">
                     <div class="wma-info__map-container">
 
-                      <span>Drag to confirm location:</span>
+                      <span>Drag map to adjust location:</span>
                       <div id="interactive_map"></div>
                       <!-- <img data-bind="attr:{ src: serviceMapUrl }"/> -->
 
@@ -619,6 +619,7 @@
                   <div class="wma-info__column">
                     <div class="wma-billing__summary">
                       <address>
+                        <p data-bind="text: serviceFirstName + ' ' + serviceLastName"></p>  
                         <p data-bind="text: serviceAddress"></p>
                         <p data-bind="text: serviceAddressAptPrint"></p>
                         <p data-bind="text: serviceAddressCityStateZip"></p>
