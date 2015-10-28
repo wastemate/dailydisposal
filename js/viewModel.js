@@ -389,6 +389,9 @@ function viewModel() {
     }
     return price;
   });
+  self.formattedServiceName = ko.computed(function(){
+    return self.serviceFirstName() + ' ' + self.serviceLastName();
+  });
   
   self.isOneTimePrice = ko.computed(function(){
     var hasSelectedRollOff = ko.utils.arrayFirst(self.rolloffServices(), function (item) {
@@ -985,8 +988,8 @@ function viewModel() {
         wastemate.saveBillingSelection({
           name: self.billingFirstName() + " " + self.billingLastName(),
           street: self.billingAddress(),
-          city: self.billingCity,
-          state: self.billingStateShort,
+          city: self.billingCity(),
+          state: self.billingStateShort(),
           zip: self.billingZip(),
           phone: self.billingPhone()
         });
