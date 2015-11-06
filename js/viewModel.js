@@ -907,7 +907,7 @@ function viewModel() {
       } else if (siteInfo.lastName == '') {
         alert('Oops. Missing your last name.');
         return;
-      } else if (siteInfo.email == '') {
+      } else if (siteInfo.email == '' && !self.skipValidateCC) {
         alert('Oops. Missing your email.');
         return;
       } else if (siteInfo.street == '') {
@@ -928,7 +928,7 @@ function viewModel() {
         var re = /^([\w-]+(?:\.[\w-]+)*)@((?:[\w-]+\.)*\w[\w-]{0,66})\.([a-z]{2,6}(?:\.[a-z]{2})?)$/i;
         return re.test(email);
       };
-      if (!validateEmail(siteInfo.email)) {
+      if (!validateEmail(siteInfo.email) && !self.skipValidateCC) {
         alert('Oops. That email isn\'t valid');
         return;
       }
@@ -1060,6 +1060,8 @@ function viewModel() {
       }
       break;
     }
+    //Make sure intercom knows that the view changed
+    window.Intercom('update');
   };
   self.saveOrderInFlight = false;
   self.saveOrder = function (event, next) {
@@ -1105,7 +1107,7 @@ function viewModel() {
       delete s.enabled;
       delete s.selected;
     });
-    console.log(serviceChoices, materialSelection);
+    //console.log(serviceChoices, materialSelection);
     wastemate.saveServiceSelection(serviceChoices, materialSelection).then(function () {
       console.log('saved service selection');
       self.saveOrderInFlight = false;
