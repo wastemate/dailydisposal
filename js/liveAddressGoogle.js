@@ -11,7 +11,7 @@ var setupLiveAddressGoogle = function (viewModel) {
   google.maps.event.addListener(autocomplete, 'place_changed', function () {
     var place = autocomplete.getPlace();
     parseAddress([place], function () {
-      viewModel.show('categries');
+      viewModel.show('categories');
       //Always scroll back to the top of the page
       window.scrollTo(window.scrollX, 0);
     });
@@ -26,7 +26,7 @@ var setupLiveAddressGoogle = function (viewModel) {
       var place = autocomplete2.getPlace();
       parseAddress( [ place ], function () {
         $('#signUp').modal('hide');
-        viewModel.show('categries');
+        viewModel.show('categories');
         //Always scroll back to the top of the page
         window.scrollTo(window.scrollX, 0);
       });
@@ -116,11 +116,24 @@ var setupLiveAddressGoogle = function (viewModel) {
       }
       //Grab the site service day while we're at it
       wastemate.getServiceDayOfWeek().then(function (serviceDays) {
-        if (!serviceDays) {
+        
+        //Need to check if our categories all require a service day or not.
+        var hasOncall = false;
+        _.each(viewModel.categories(), function(c){
+          if(c.isRecurring && serviceDays){
+            c.isVisbile = true;
+          } else if(!c.isRecurring){
+            hasOncall = true;
+          }
+        });
+        
+        //When they all do and we don't know the service day then warn the user that nothing is offered at their location
+        if (!serviceDays && !hasOncall) {
           resetValues();
           alert('Oh drats, we don\'t have your address configured for online sign up. Call our office to speak to a human. 238-2381');
           return;
         }
+        
         //service days should be an array 
         if(serviceDays.length > 0){
           var service = serviceDays[0];

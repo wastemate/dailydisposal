@@ -105,6 +105,8 @@ Date.prototype.toJSONLocal = function () {
 };
 function viewModel() {
   var self = this;
+  self.history = [];
+  self.lastHash = '';
   self.showing = ko.observable('search');
   self.shouldShowWMA = ko.observable(false);
   /* visibility controls */
@@ -666,9 +668,47 @@ function viewModel() {
       }
     }
   };
+  self.previous = function(data, event){
+   if(window.location.hash == self.lastHash){
+     self.lastHash = '';
+     return;
+   }
+   //remove current from top
+   self.history.pop();
+   var last = self.history.pop();
+   if(last){
+     console.log("previous: " + last);
+     //Always scroll back to the top of the page
+     window.scrollTo(window.scrollX, 0);
+     self.show(last);
+     return true;
+   } else {
+     return false;
+   }
+  },
+  self.manageHistory = function(page){
+    
+    self.lastHash = window.location.hash; 
+    
+    console.log("manageHistory: " + self.lastHash);
+    
+    if(page == 'search'){
+      self.history = [];
+    }
+    
+    if(page == 'processing'){
+      return; //don't want this one in the history
+    }
+    
+    //If not already at the end of the array, add it
+    if(page != self.history[self.history.length-1]){
+      self.history.push(page);    
+    }
+  },
   self.next = function (data, event) {
     //Always scroll back to the top of the page
     window.scrollTo(window.scrollX, 0);
+    
     switch (self.showing()) {
     case 'residential': {
         //store selection in a pending order
@@ -922,7 +962,7 @@ function viewModel() {
         console.log(err);
       });
       break;
-    case 'categries':
+    case 'categories':
       //No next button here!! User must choose a category (Lob) to continue
       break;
     case 'chooseStart':
@@ -1045,7 +1085,7 @@ function viewModel() {
           city: self.billingCity(),
           state: self.billingStateShort(),
           zip: self.billingZip(),
-          phone: self.billingPhone()
+          phone: self.billingPhone() || self.servicePhone()
         });
         //persist billing options
         wastemate.setBillingOptions(self.wantsAutopay(), self.wantsPaperless());
@@ -1114,8 +1154,6 @@ function viewModel() {
       }
       break;
     }
-    //Make sure intercom knows that the view changed
-    window.Intercom('update');
   };
   self.saveOrderInFlight = false;
   self.saveOrder = function (event, next) {
@@ -1182,6 +1220,8 @@ function viewModel() {
       //polyfill didn't load
     }
     
+    self.manageHistory(view);
+    
     // refresh
     self.materialServices();
     if (self._billingIsSame()) {
@@ -1205,6 +1245,7 @@ function viewModel() {
       self.shouldChooseStart(false);
       self.shouldShowProcessing(false);
     };
+    
     switch (view) {
     case 'loading':
       hideAll();
@@ -1213,7 +1254,7 @@ function viewModel() {
       hideAll();
       self.shouldShowSearch(true);
       break;
-    case 'categries':
+    case 'categories':
       hideAll();
       //bring wastemate front and center when embedded in a 3rd party site
       var siteContent = $('#body');

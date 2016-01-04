@@ -330,7 +330,7 @@
                     <div id='first-pickup-datepicker'></div>
                 </div>
 
-                <div class="wma-products__container" data-bind="foreach: selectedServices">
+                <div class="wma-products__container" data-bind="foreach: selectedServices" style="width: 75%;margin-left:25%">
                     <div class="wma-product__container">
                       <div class='wma-product__top_desc'>
                         <p class="wma-product__size" data-bind="text: type.name"></p>
@@ -368,7 +368,7 @@
                 <div class="wma-choose__selector">
                   <!-- ui datepicker -->
                   <label for="wma-end-date">Removal Date</label>
-                  <input id='wma-rolloff-pickup-date-text' style="width: 213px;font-size: 17px;color: #702e79;"></input>
+                  <input id='wma-rolloff-pickup-date-text' style="width: 100%;font-size: 17px;color: #702e79;"></input>
                   <div id='wma-rolloff-pickup-datepicker'></div>
                   <!-- <input class="wma-choose__selector-date" type="datetime-local" id="wma-end-date" placeholder="Select Date"> -->
                   <!-- / -->
@@ -376,7 +376,7 @@
 
                 <div class="wma-products__container rolloff-product" data-bind="with: selectedService">
 
-                    <div class="wma-product__container">
+                    <div class="wma-product__container wma-product__container-narrow" style="width: 21% !important;">
                       <div class="wma-product__image-wrap">
                         <img src="assets/images/ph_cart.png" data-bind="attr: {src: icon}">
                       </div>
