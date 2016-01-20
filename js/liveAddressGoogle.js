@@ -1,35 +1,67 @@
 var _debug = window._debug || false;
 var setupLiveAddressGoogle = function (viewModel) {
   // Google Places Autocomplete
+ 
   var options = {
     types: ['address'],
     componentRestrictions: { country: 'us' }
   };
+  
+  if(_wastemate['search_bounds'] != undefined){
+    var bounds = _wastemate['search_bounds'];
+    var searchBounds = new google.maps.LatLngBounds(
+    new google.maps.LatLng(bounds.latTop, bounds.lonLeft),
+    new google.maps.LatLng(bounds.latBottom, bounds.lonRight));
+    options.bounds = searchBounds;
+  }
+  
+  //Show WasteMate
+  var wasteMateNext = function(){
+    //check for pending order
+    if(viewModel.pendingOrder.line != undefined){
+       var line = viewModel.pendingOrder.line;
+       var loading = false;
+       _.each(viewModel.categories(), function(c){
+          if(c.line == line){
+            viewModel.loadCategory(c);
+            loading = true;
+          }
+        });
+        if(!loading){
+            console.log("Service selected was not avaialbe for auto selection");
+            viewModel.show('categories');
+        }
+        viewModel.pendingOrder.line = undefined;
+        var siteContent = $('#' + _wastemate['ui']['hide'] || 'body');
+        if(siteContent){
+            viewModel.shouldShowWMA(true);
+            siteContent.hide();
+        }
+    } else {
+      $('#signUp').modal('hide');
+      viewModel.show('categories');
+    }
+    //Always scroll back to the top of the page
+    window.scrollTo(window.scrollX, 0);
+  }
   // first (header) input
-  var input = document.getElementById('street_address');
+  var inputElementId = _wastemate['ui']['main'] || 'wastemate-ordering';
+  var input = document.getElementById(inputElementId);
   var autocomplete = new google.maps.places.Autocomplete(input, options);
   google.maps.event.addListener(autocomplete, 'place_changed', function () {
     var place = autocomplete.getPlace();
-    parseAddress([place], function () {
-      viewModel.show('categories');
-      //Always scroll back to the top of the page
-      window.scrollTo(window.scrollX, 0);
-    });
+    parseAddress([place], wasteMateNext);
   });
   
   // second (lightbox) input
+  var lightBoxElementId = _wastemate['ui']['search'] || 'wastemate-address';
   var input2 = document.getElementById('floating_address' );
   if(input2){
     var autocomplete2 = new google.maps.places.Autocomplete( input2, options );
 
     google.maps.event.addListener( autocomplete2, 'place_changed', function() {
       var place = autocomplete2.getPlace();
-      parseAddress( [ place ], function () {
-        $('#signUp').modal('hide');
-        viewModel.show('categories');
-        //Always scroll back to the top of the page
-        window.scrollTo(window.scrollX, 0);
-      });
+      parseAddress( [ place ], wasteMateNext);
     });
   }
   
@@ -130,7 +162,7 @@ var setupLiveAddressGoogle = function (viewModel) {
         //When they all do and we don't know the service day then warn the user that nothing is offered at their location
         if (!serviceDays && !hasOncall) {
           resetValues();
-          alert('Oh drats, we don\'t have your address configured for online sign up. Call our office to speak to a human. 238-2381');
+          alert('Oh drats, we don\'t have your address configured for online sign up. Call our office to speak to a human. ' + _wastemate['ui']['error_phone']);
           return;
         }
         
@@ -157,7 +189,7 @@ var setupLiveAddressGoogle = function (viewModel) {
         }
         $('#lob_address').css('border', '2px solid #FFCCCC');
         resetValues();
-        alert('Oh drats, we don\'t have your address configured for online sign up. Call our office to speak to a human. 238-2381');
+        alert('Oh drats, we don\'t have your address configured for online sign up. Call our office to speak to a human. ' + _wastemate['ui']['error_phone']);
       });
     });
   };
