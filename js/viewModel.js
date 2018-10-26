@@ -103,6 +103,11 @@ Date.prototype.toJSONLocal = function () {
   local.setMinutes(this.getMinutes() - this.getTimezoneOffset());
   return local.toISOString().slice(0, 10);
 };
+//ccExpiration Object
+var CcExp = function(value, display) {
+  this.value = value;
+  this.display = display;
+};
 function viewModel() {
   var self = this;
   self.history = [];
@@ -239,6 +244,9 @@ function viewModel() {
   });
   self.billingCard = ko.observable();
   self.billingCardExpiresMonth = ko.observable();
+  self.ccExpYears = ko.observableArray([
+    new CcExp("-1", "yyyy")
+  ]);
   self.billingCardExpiresYear = ko.observable();
   self.billingCardSecurity = ko.observable();
   self.validBillingCard = ko.observable();
@@ -469,112 +477,151 @@ function viewModel() {
   self.loadCategory = function (data, event) {
     console.log('Clicked');
     console.log(data);
-    self.show('processing');
-    wastemate.getServices(data.line).then(function (services) {
-      if (services.length == 0) {
-        self.generateQuoteFor = data.line; //tell wastemate what the user is interested in
-        self.noServiceSelection(true);
-        self.show('quote');
-        setupMiniMap(self.userLatLon().lat, self.userLatLon().lon);
-        return;
-      }
-      //clear out all services currently in the view model arrays
-      self.services([]);
-      self.landfillServices([]);
-      self.recyclingServices([]);
-      self.organicsServices([]);
-      self.rolloffServices([]);
-      $.each(services, function (index, service) {
-        //all the services
-        self.services.push(service);
-        if (service.type.name == 'Landfill') {
-          service.selected = false;
-          service.summary = 'Landfill service';
-          self.landfillServices.push(service);
+    
+    if(!data.line.isRecurring){
+      wastemate.getServices(data.line).then(function (services) {
+        if (services.length == 0) {
+          self.generateQuoteFor = data.line; //tell wastemate what the user is interested in
+          self.noServiceSelection(true);
+          self.show('quote');
+          setupMiniMap(self.userLatLon().lat, self.userLatLon().lon);
         }
-        if (service.type.name == 'Recycling') {
-          service.selected = false;
-          service.summary = 'Recycling service';
-          self.recyclingServices.push(service);
-        }
-        if (service.type.name == 'Organics') {
-          service.selected = false;
-          service.summary = 'Recycling service';
-          self.organicsServices.push(service);
-        }
-        if (service.type.name == 'RollOff' || service.isRecurring === false) {
-          service.selected = false;
-          service.summary = 'on-call service';
-          self.rolloffServices.push(service);
-        }
-      });
-      //sort the arrays by name (price)
-      self.landfillServices.sort(function (left, right) {
-        return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
-      });
-      self.recyclingServices.sort(function (left, right) {
-        return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
-      });
-      self.organicsServices.sort(function (left, right) {
-        return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
-      });
-      self.rolloffServices.sort(function (left, right) {
-        return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
-      });
-      // select residential defaults
-      self.selectResidentialDefaults(self.landfillServices, true);
-      self.selectResidentialDefaults(self.recyclingServices, false);
-      self.selectResidentialDefaults(self.organicsServices, false);
-      self.servicesHaveLoaded(true);
-      if (self.rolloffServices().length) {
+
+        //clear out all services currently in the view model arrays
+        self.services([]);
+        self.rolloffServices([]);
+        $.each(services, function (index, service) {
+          self.services.push(service);
+          if (service.type.name == 'RollOff' || service.isRecurring === false) {
+            service.selected = false;
+            service.summary = 'on-call service';
+            self.rolloffServices.push(service);
+          }
+        });
+        
+        self.rolloffServices.sort(function (left, right) {
+          return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
+        });
+        self.servicesHaveLoaded(true);
         var allMaterials = [];
-        
-        _.each(self.rolloffServices(), function (s) {
-          allMaterials.push(s.materials);
-        });
-        
-        allMaterials = _.flattenDeep(allMaterials);
-        allMaterials = _.uniq(allMaterials, function (m) {
-          return m.name;
-        });
-        
-        // group services by material
-        _.each(allMaterials, function (m) {
-          m.services = m.services || [];
+          
           _.each(self.rolloffServices(), function (s) {
-            //When the service has a materialName set that matches the material, add it to the list of services for that material
-            if(s.materialName == m.name){
-              m.services.push(s);
-            }
+            allMaterials.push(s.materials);
           });
-        });
-        self.material(allMaterials);
-        console.log(allMaterials);
-        self.show('materials');
-      } else {
-        //Check pending order for a landfill service to auto select
-        var found = false;
-        if(self.pendingOrder.service != undefined){
-          var service = self.pendingOrder.service;
-          _.each(self.landfillServices(), function(s){
-            if(s.guid == service){
-              self.selectProductService(s, 'automagic selection');
-              //our job is done, reset the pending order.
-              self.pendingOrder = {};
-              found = true;
-            }
+          
+          allMaterials = _.flattenDeep(allMaterials);
+          allMaterials = _.uniq(allMaterials, function (m) {
+            return m.name;
           });
-        } 
-        if(!found){
-          self.show('residentialLandfill');
+          
+          // group services by material
+          _.each(allMaterials, function (m) {
+            m.services = m.services || [];
+            _.each(self.rolloffServices(), function (s) {
+              //When the service has a materialName set that matches the material, add it to the list of services for that material
+              if(s.materialName == m.name){
+                m.services.push(s);
+              }
+            });
+          });
+          self.material(allMaterials);
+          console.log(allMaterials);
+          self.show('materials');
+      });
+    } else {
+      //Call new endpoint -> use the matrix!!
+      encore.verifyLocation().then(function(services){
+        if(services == null){
+          //API wasn't able to provide a high confidence match for this address, just get the basic customer info and submit it.
+          return;
         }
-      }
-    }, function (err) {
-      if (err) {
-        //most likely we need the users address before they continue.
-        alert('Address required before choosing service category');
-      }
-    });
+        self.encoreServices = services;
+        self.serviceDay(services.wasteServiceDay);
+        self.show('processing');
+        wastemate.getServices(data.line).then(function (services) {
+          if (services.length == 0) {
+            self.generateQuoteFor = data.line; //tell wastemate what the user is interested in
+            self.noServiceSelection(true);
+            self.show('quote');
+            setupMiniMap(self.userLatLon().lat, self.userLatLon().lon);
+            return;
+          }
+          //clear out all services currently in the view model arrays
+          self.services([]);
+          self.landfillServices([]);
+          self.recyclingServices([]);
+          self.organicsServices([]);
+          self.rolloffServices([]);
+          $.each(services, function (index, service) {
+            //all the services
+            self.services.push(service);
+            if (service.type.name == 'Landfill') {
+              service.selected = false;
+              service.summary = 'Landfill service';
+              service.price = self.encoreServices.wasteRate;
+              self.landfillServices.push(service);
+            }
+            if (service.type.name == 'Recycling') {
+              service.selected = false;
+              service.summary = 'Recycling service';
+              service.price = self.encoreServices.recycleRate;
+              self.recyclingServices.push(service);
+            }
+            if (service.type.name == 'Organics') {
+              service.selected = false;
+              service.summary = 'Recycling service';
+              self.organicsServices.push(service);
+            }
+            if (service.type.name == 'RollOff' || service.isRecurring === false) {
+              service.selected = false;
+              service.summary = 'on-call service';
+              self.rolloffServices.push(service);
+            }
+          });
+          //sort the arrays by name (price)
+          self.landfillServices.sort(function (left, right) {
+            return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
+          });
+          self.recyclingServices.sort(function (left, right) {
+            return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
+          });
+          self.organicsServices.sort(function (left, right) {
+            return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
+          });
+          self.rolloffServices.sort(function (left, right) {
+            return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
+          });
+          // select residential defaults
+          self.selectResidentialDefaults(self.landfillServices, true);
+          self.selectResidentialDefaults(self.recyclingServices, false);
+          self.selectResidentialDefaults(self.organicsServices, false);
+          self.servicesHaveLoaded(true);
+          
+          //Check pending order for a landfill service to auto select
+          var found = false;
+          if(self.pendingOrder.service != undefined){
+            var service = self.pendingOrder.service;
+            _.each(self.landfillServices(), function(s){
+              if(s.guid == service){
+                self.selectProductService(s, 'automagic selection');
+                //our job is done, reset the pending order.
+                self.pendingOrder = {};
+                found = true;
+              }
+            });
+          } 
+          if(!found){
+            self.show('residentialLandfill');
+          }
+          
+        }, function (err) {
+          if (err) {
+            //most likely we need the users address before they continue.
+            alert('Address required before choosing service category');
+          }
+        });
+      });
+    }
   };
   self.showCategories = function (data, event) {
     self.show('categories');
@@ -748,6 +795,32 @@ function viewModel() {
     if(page != self.history[self.history.length-1]){
       self.history.push(page);    
     }
+  },
+  self.expirationChanged = function (obj, event) {
+    var onExpirationDateChange = function (isValid) {
+      _wastemate['viewModel'].validBillingCardExpiration(false);
+      if (isValid) {
+        _wastemate['viewModel'].validBillingCardExpiration(true);
+        $('#wma-cst-expmm').css('border', '2px solid #007700');
+        $('#wma-cst-expyy').css('border', '2px solid #007700');
+      } else {
+        if ($('#wma-cst-expmm').val() == -1 || $('#wma-cst-expyy').val() == -1) {
+          // one of them is blank
+          $('#wma-cst-expmm').css('border', '');
+          $('#wma-cst-expyy').css('border', '');
+        } else {
+          $('#wma-cst-expmm').css('border', '2px solid #FFCCCC');
+          $('#wma-cst-expyy').css('border', '2px solid #FFCCCC');
+        }
+      }
+    };
+    
+    if (event.originalEvent) { //user changed
+        var m = self.billingCardExpiresMonth();
+        var y = self.billingCardExpiresYear().display;
+        var valid = $.payment.validateCardExpiry(m, y);
+        onExpirationDateChange(valid);
+    }   
   },
   self.next = function (data, event) {
     //Always scroll back to the top of the page
@@ -1364,7 +1437,7 @@ function viewModel() {
         var cardInfo = {
           cardNumber: self.billingCard().replace(/\s/g, ''),
           ccExpiresMonth: Number(self.billingCardExpiresMonth()),
-          ccExpiresYear: Number(self.billingCardExpiresYear()),
+          ccExpiresYear: Number(self.billingCardExpiresYear().display),
           securityCode: self.billingCardSecurity(),
           fullName: self.billingFirstName() + ' ' + self.billingLastName(),
           address: self.billingAddress(),
@@ -1372,45 +1445,62 @@ function viewModel() {
         };
         //Pull the card type from the Stripe payment lib
         cardInfo.cardType = $.payment.cardType(cardInfo.cardNumber);
-        wastemate.tokenizeCard(cardInfo).then(function (cardToken) {
-          wastemate._private.order.cardToken = cardToken;
-          //Preauthorize the payment
-          var amount = self.selectedServicePrice();
-          if (!self.wantsAutopay() && !self.isOneTimePrice()) {
-              amount = amount * 2;
-          }
-          amount = ~~(parseFloat(amount) * 100);
-          wastemate.preAuthorizePayment(amount, cardInfo).then(function(preauth){
-            wastemate._private.order.set('amount', amount);
-            wastemate._private.order.set('delayedCaptureToken', preauth.creditCardToken);
-            //Step 2 - Persist billing info via fire and forget
-            wastemate._private.order.save();
-            self.paymentProcessed(true);
-            processOrder();
-          }, function(err){
+        
+        //Need a way to handle testing cards here: 4242 4242 4242 4242
+        if(cardInfo.cardNumber == '4242424242424242'){
+          self.handleNewCardToken(cardInfo, 'aFakeTokenValue', processOrder);
+        } else {
+          wastemate.tokenizeCard(cardInfo).then(function (cardToken) {
+            self.handleNewCardToken(cardInfo, cardToken, processOrder);
+          }, function (err) {
             self.saveOrderInFlight = false;
             self.show('payment');
             console.log(err);
             if (err) {
               self.formWarning.push({
                 strong: 'Payment Error: ',
-                message: 'Unable to process payment. Check credit card information and try again.'
+                message: 'Credit card validation error. Check credit card information and try again.'
               });
-              }
-          });       
-        }, function (err) {
-          self.saveOrderInFlight = false;
-          self.show('payment');
-          console.log(err);
-          if (err) {
-            self.formWarning.push({
-              strong: 'Payment Error: ',
-              message: 'Credit card validation error. Check credit card information and try again.'
-            });
-          }
-        });
+            }
+          });
+        }
       }
       break;
+    }
+  };
+  self.handleNewCardToken = function(cardInfo, cardToken, processOrder){
+    wastemate._private.order.cardToken = cardToken;
+    //Preauthorize the payment
+    var amount = self.selectedServicePrice();
+    if (!self.wantsAutopay() && !self.isOneTimePrice()) {
+        amount = amount * 2;
+    }
+    amount = ~~(parseFloat(amount) * 100);
+    if(cardToken != 'aFakeTokenValue'){
+      wastemate.preAuthorizePayment(amount, cardInfo).then(function(preauth){
+        wastemate._private.order.set('amount', amount);
+        wastemate._private.order.set('delayedCaptureToken', preauth.creditCardToken);
+        //Step 2 - Persist billing info via fire and forget
+        wastemate._private.order.save();
+        self.paymentProcessed(true);
+        processOrder();
+      }, function(err){
+        self.saveOrderInFlight = false;
+        self.show('payment');
+        console.log(err);
+        if (err) {
+          self.formWarning.push({
+            strong: 'Payment Error: ',
+            message: 'Unable to process payment. Check credit card information and try again.'
+          });
+          }
+      });
+    } else {
+      wastemate._private.order.set('amount', amount);
+      wastemate._private.order.set('delayedCaptureToken', '0000AAAABBBBBXXXX');
+      wastemate._private.order.save();
+      self.paymentProcessed(true);
+      processOrder();
     }
   };
   self.saveOrderInFlight = false;
@@ -1585,6 +1675,20 @@ function viewModel() {
       hideAll();
       self.shouldShowPaymentInfo(true);
       self.shouldShowProcessNav(true);
+      
+      //Make sure the CC expiration is filled with valid years
+      if(self.ccExpYears().length == 1){
+        var expObjs = self.ccExpYears();
+        var yr = new Date().getFullYear();
+        
+        var d = new Date();
+        for (var i = 0; i <= 20; i++) {
+          d.setFullYear(yr + i);
+          expObjs.push(new CcExp(d.getFullYear(), d.getFullYear()));
+        }
+        self.ccExpYears(expObjs);
+      }
+
       break;
     case 'processing':
       hideAll();
@@ -1688,37 +1792,7 @@ $('#wma-cst-cvv').on('keyup', function () {
     $(this).css('background-color', '');
   }
 });
-(function () {
-  var onExpirationDateChange = function (isValid) {
-    _wastemate['viewModel'].validBillingCardExpiration(false);
-    if (isValid) {
-      _wastemate['viewModel'].validBillingCardExpiration(true);
-      $('#wma-cst-expmm').css('border', '2px solid #007700');
-      $('#wma-cst-expyy').css('border', '2px solid #007700');
-    } else {
-      if ($('#wma-cst-expmm').val() == -1 || $('#wma-cst-expyy').val() == -1) {
-        // one of them is blank
-        $('#wma-cst-expmm').css('border', '');
-        $('#wma-cst-expyy').css('border', '');
-      } else {
-        $('#wma-cst-expmm').css('border', '2px solid #FFCCCC');
-        $('#wma-cst-expyy').css('border', '2px solid #FFCCCC');
-      }
-    }
-  };
-  $('#wma-cst-expmm').on('change', function () {
-    var m = $(this).val();
-    var y = $('#wma-cst-expyy').val();
-    var valid = $.payment.validateCardExpiry(m, y);
-    onExpirationDateChange(valid);
-  });
-  $('#wma-cst-expyy').on('change', function () {
-    var m = $('#wma-cst-expmm').val();
-    var y = $(this).val();
-    var valid = $.payment.validateCardExpiry(m, y);
-    onExpirationDateChange(valid);
-  });
-}());
+
 $('#wma-cst-phn').inputmask('mask', { 'mask': '(999) 999-9999' });
 $('#wma-cst-billingphn').inputmask('mask', { 'mask': '(999) 999-9999' });
 $('#wma-cst-billsameaddr').on('change', function () {

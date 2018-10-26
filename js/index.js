@@ -14,11 +14,7 @@ $(document).ready(function () {
     if(_wastemate['REQUIRE_CC'] === undefined){
       _wastemate['REQUIRE_CC'] = true;
     }
-    
-    if(_wastemate.site.baseUrl === undefined){
-        _wastemate.site.baseUrl = '';
-    }
-    
+        
     wastemate._private.ccRequired = _wastemate['REQUIRE_CC'];
     wma_viewModel.skipValidateCC = !wastemate._private.ccRequired;
     
