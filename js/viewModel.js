@@ -814,7 +814,7 @@ function viewModel() {
         }
       }
     };
-    
+
     if (event.originalEvent) { //user changed
         var m = self.billingCardExpiresMonth();
         var y = self.billingCardExpiresYear().display;
@@ -1729,7 +1729,8 @@ ko.extenders.required = function (target, errorMessage) {
 ko.bindingHandlers.backgroundImage = {
   update: function (element, valueAccessor) {
     ko.bindingHandlers.style.update(element, function () {
-      return { backgroundImage: 'url(\''+ _wastemate.site.baseUrl + valueAccessor() + '\')' };
+      var baseUrl = _wastemate.site.baseUrl ? _wastemate.site.baseUrl : '';
+      return { backgroundImage: 'url(\''+ baseUrl + valueAccessor() + '\')' };
     });
   }
 };
