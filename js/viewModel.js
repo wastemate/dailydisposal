@@ -489,9 +489,29 @@ function viewModel() {
 
         //clear out all services currently in the view model arrays
         self.services([]);
+        self.landfillServices([]);
+        self.recyclingServices([]);
+        self.organicsServices([]);
         self.rolloffServices([]);
         $.each(services, function (index, service) {
           self.services.push(service);
+          if (service.type.name == 'Landfill') {
+            service.selected = false;
+            service.summary = 'Landfill service';
+            //service.price = self.encoreServices.wasteRate;
+            self.landfillServices.push(service);
+          }
+          if (service.type.name == 'Recycling') {
+            service.selected = false;
+            service.summary = 'Recycling service';
+            //service.price = self.encoreServices.recycleRate;
+            self.recyclingServices.push(service);
+          }
+          if (service.type.name == 'Organics') {
+            service.selected = false;
+            service.summary = 'Recycling service';
+            self.organicsServices.push(service);
+          }
           if (service.type.name == 'RollOff' || service.isRecurring === false) {
             service.selected = false;
             service.summary = 'on-call service';
@@ -499,12 +519,27 @@ function viewModel() {
           }
         });
         
+        //sort the arrays by name (price)
+        self.landfillServices.sort(function (left, right) {
+          return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
+        });
+        self.recyclingServices.sort(function (left, right) {
+          return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
+        });
+        self.organicsServices.sort(function (left, right) {
+          return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
+        });
         self.rolloffServices.sort(function (left, right) {
           return left.name == right.name ? 0 : left.name < right.name ? -1 : 1;
         });
+
+        self.selectResidentialDefaults(self.landfillServices, true);
+        self.selectResidentialDefaults(self.recyclingServices, false);
+        self.selectResidentialDefaults(self.organicsServices, false);
         self.servicesHaveLoaded(true);
-        var allMaterials = [];
-          
+        if (self.rolloffServices().length) {
+          var allMaterials = [];
+            
           _.each(self.rolloffServices(), function (s) {
             allMaterials.push(s.materials);
           });
@@ -527,6 +562,29 @@ function viewModel() {
           self.material(allMaterials);
           console.log(allMaterials);
           self.show('materials');
+        } else {
+          var found = false;
+          if(self.pendingOrder.service != undefined){
+            var service = self.pendingOrder.service;
+            _.each(self.landfillServices(), function(s){
+              if(s.guid == service){
+                self.selectProductService(s, 'automagic selection');
+                //our job is done, reset the pending order.
+                self.pendingOrder = {};
+                found = true;
+              }
+            });
+          } else if(self.landfillServices().length == 1) {
+            var landfill = self.landfillServices()[0];
+            console.log("Selecting only landfill service");
+            console.log(landfill);
+            self.selectProductService(landfill, 'default selection');
+            found = true;
+          } 
+          if(!found){
+            self.show('residentialLandfill');
+          }
+        }
       });
     } else {
       //Call new endpoint -> use the matrix!!
